@@ -839,18 +839,11 @@ pub fn apply_plain_transaction(
     }
 
     // Update remaining_gas for block gas limit checks.
-    // EIP-8037 (Amsterdam+): block capacity is max(sum_regular, sum_state), so
-    // remaining_gas = gas_limit - max(block_regular, block_state). Using the sum
-    // would be overly conservative and skip transactions that actually fit.
-    if context.is_amsterdam {
-        context.remaining_gas = context.payload.header.gas_limit.saturating_sub(
-            context
-                .block_regular_gas_used
-                .max(context.block_state_gas_used),
-        );
-    } else {
-        context.remaining_gas = context.remaining_gas.saturating_sub(report.gas_used);
-    }
+    // Use the 1D sum (pre-refund gas_used) for capacity, matching geth's GasPool
+    // behavior. While EIP-8037 computes block.gas_used as max(regular, state),
+    // the builder must use sum(tx_gas_used) for capacity to ensure validators
+    // can re-execute all transactions within the gas limit.
+    context.remaining_gas = context.remaining_gas.saturating_sub(report.gas_used);
 
     // Block value uses gas_spent (what the user actually pays) for tip calculation
     context.block_value += U256::from(report.gas_spent) * head.tip;
