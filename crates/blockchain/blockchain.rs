@@ -2446,9 +2446,12 @@ impl Blockchain {
             return Err(MempoolError::TxMaxDataSizeError);
         }
 
-        if config.is_osaka_activated(header.timestamp) && tx.gas_limit() > POST_OSAKA_GAS_LIMIT_CAP
+        // EIP-7825: Osaka caps tx.gas at TX_MAX_GAS_LIMIT in the mempool.
+        // Amsterdam removes this mempool cap (execution engine caps effective gas instead).
+        if config.is_osaka_activated(header.timestamp)
+            && !config.is_amsterdam_activated(header.timestamp)
+            && tx.gas_limit() > POST_OSAKA_GAS_LIMIT_CAP
         {
-            // https://eips.ethereum.org/EIPS/eip-7825
             return Err(MempoolError::TxMaxGasLimitExceededError(
                 tx.hash(),
                 tx.gas_limit(),
