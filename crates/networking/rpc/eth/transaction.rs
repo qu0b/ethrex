@@ -11,7 +11,7 @@ use crate::{
 };
 use ethrex_blockchain::{Blockchain, vm::StoreVmDatabase};
 use ethrex_common::{
-    H256,
+    H256, U256,
     constants::EMPTY_KECCACK_HASH,
     types::{AccessListEntry, BlockHash, BlockHeader, BlockNumber, GenericTransaction, TxKind},
 };
@@ -500,10 +500,20 @@ impl RpcHandler for EstimateGasRequest {
             None => highest_gas_limit,
         };
 
-        if !transaction.gas_price.is_zero() {
+        // For EIP-1559 transactions gas_price may be zero in the request while max_fee_per_gas
+        // is set. Use whichever is available to cap the gas limit by account balance.
+        let effective_gas_price = if !transaction.gas_price.is_zero() {
+            transaction.gas_price
+        } else if let Some(mfpg) = transaction.max_fee_per_gas {
+            U256::from(mfpg)
+        } else {
+            U256::zero()
+        };
+        if !effective_gas_price.is_zero() {
             highest_gas_limit = recap_with_account_balances(
                 highest_gas_limit,
                 &transaction,
+                effective_gas_price,
                 storage,
                 block_header.number,
             )
@@ -563,6 +573,7 @@ impl RpcHandler for EstimateGasRequest {
 async fn recap_with_account_balances(
     highest_gas_limit: u64,
     transaction: &GenericTransaction,
+    effective_gas_price: U256,
     storage: &Store,
     block_number: BlockNumber,
 ) -> Result<u64, RpcErr> {
@@ -571,7 +582,8 @@ async fn recap_with_account_balances(
         .await?
         .map(|acc| acc.balance)
         .unwrap_or_default();
-    let account_gas = account_balance.saturating_sub(transaction.value) / transaction.gas_price;
+    let account_gas =
+        account_balance.saturating_sub(transaction.value) / effective_gas_price;
     // If account_gas exceeds u64, the account can afford any gas limit.
     let account_gas = u64::try_from(account_gas).unwrap_or(highest_gas_limit);
     Ok(highest_gas_limit.min(account_gas))
