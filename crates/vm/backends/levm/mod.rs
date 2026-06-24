@@ -2969,7 +2969,10 @@ fn vm_from_generic<'a>(
 }
 
 pub fn get_max_allowed_gas_limit(block_gas_limit: u64, fork: Fork) -> u64 {
-    if fork >= Fork::Osaka {
+    // Osaka caps tx gas at POST_OSAKA_GAS_LIMIT_CAP (EIP-7825).
+    // Amsterdam removes the mempool cap (state gas is separate dimension via the reservoir),
+    // so eth_estimateGas must search up to block_gas_limit to allow large state-gas txs.
+    if fork >= Fork::Osaka && fork < Fork::Amsterdam {
         POST_OSAKA_GAS_LIMIT_CAP
     } else {
         block_gas_limit
