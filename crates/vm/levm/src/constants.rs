@@ -29,8 +29,8 @@ pub use ethrex_common::constants::TX_MAX_GAS_LIMIT_AMSTERDAM;
 
 pub const MAX_CODE_SIZE: u64 = 0x6000;
 pub const INIT_CODE_MAX_SIZE: usize = 49152;
-// EIP-7954 (Amsterdam): increased limits
-pub const AMSTERDAM_MAX_CODE_SIZE: u64 = 0x8000;
+// EIP-7954 (Amsterdam): increased limits — 65536 bytes (not 0x8000=32768)
+pub const AMSTERDAM_MAX_CODE_SIZE: u64 = 0x10000;
 #[allow(clippy::as_conversions)]
 pub const AMSTERDAM_INIT_CODE_MAX_SIZE: usize = 2 * AMSTERDAM_MAX_CODE_SIZE as usize;
 
