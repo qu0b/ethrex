@@ -12,6 +12,7 @@ use crate::{
 use ethrex_blockchain::{Blockchain, vm::StoreVmDatabase};
 use ethrex_common::{
     H256,
+    constants::EMPTY_KECCACK_HASH,
     types::{AccessListEntry, BlockHash, BlockHeader, BlockNumber, GenericTransaction, TxKind},
 };
 
@@ -469,8 +470,14 @@ impl RpcHandler for EstimateGasRequest {
             let account_info = storage
                 .get_account_info(block_header.number, address)
                 .await?;
-            let code = account_info.map(|info| storage.get_account_code(info.code_hash));
-            if code.is_none() {
+            // Short-circuit for EOAs: accounts that don't exist OR exist but have no code.
+            // The binary search carries a 1.5% error margin; for plain value transfers the
+            // intrinsic cost is exact so we can return TRANSACTION_GAS directly.
+            let is_eoa = match &account_info {
+                Some(info) => info.code_hash == *EMPTY_KECCACK_HASH,
+                None => true,
+            };
+            if is_eoa {
                 let mut value_transfer_transaction = transaction.clone();
                 value_transfer_transaction.gas = Some(TRANSACTION_GAS);
                 let result: Result<ExecutionResult, RpcErr> = simulate_tx(
