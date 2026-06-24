@@ -162,9 +162,9 @@ pub const CODE_DEPOSIT_COST: u64 = 200;
 pub const CREATE_BASE_COST: u64 = 32000;
 
 // EIP-8037: Multidimensional gas for state creation (Amsterdam only)
-pub const STATE_BYTES_PER_NEW_ACCOUNT: u64 = 112;
-pub const STATE_BYTES_PER_STORAGE_SET: u64 = 32;
-pub const STATE_BYTES_PER_AUTH_TOTAL: u64 = 135; // 112 account + 23 auth-specific
+pub const STATE_BYTES_PER_NEW_ACCOUNT: u64 = 120; // 120 bytes per new account (geth: AccountCreationSize)
+pub const STATE_BYTES_PER_STORAGE_SET: u64 = 64; // 64 bytes per storage slot (32-byte key + 32-byte value)
+pub const STATE_BYTES_PER_AUTH_TOTAL: u64 = 143; // 120 account + 23 auth-specific (geth: AccountCreationSize + AuthorizationCreationSize)
 
 // EIP-8037: Dynamic cost_per_state_byte formula constants (execution-specs#2687)
 pub const BLOCKS_PER_YEAR: u64 = 2_628_000;
@@ -174,13 +174,9 @@ pub const CPSB_OFFSET: u64 = 9578;
 
 /// Compute cost_per_state_byte from the block gas limit (EIP-8037, execution-specs#2687).
 ///
-/// TEMPORARY for bal-devnet-4: returns the fixed value 1174 used by bal-devnet-3
-/// regardless of `block_gas_limit`. The dynamic formula (BLOCKS_PER_YEAR /
-/// TARGET_STATE_GROWTH_PER_YEAR / CPSB_SIGNIFICANT_BITS / CPSB_OFFSET) is preserved
-/// in the consts above so this commit can be reverted with a single `git revert` to
-/// restore the formula body. See execution-specs#2687.
+/// Fixed at 1530 for glamsterdam-devnet-6, matching geth's CostPerStateByte constant.
 pub fn cost_per_state_byte(_block_gas_limit: u64) -> u64 {
-    1174
+    1530
 }
 
 pub const REGULAR_GAS_CREATE: u64 = 9000; // replaces CREATE_BASE_COST for Amsterdam
