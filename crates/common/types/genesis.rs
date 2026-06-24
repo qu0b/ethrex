@@ -672,7 +672,7 @@ pub struct GenesisAccount {
     pub storage: BTreeMap<U256, U256>,
     #[serde(deserialize_with = "crate::serde_utils::u256::deser_hex_or_dec_str")]
     pub balance: U256,
-    #[serde(default, with = "crate::serde_utils::u64::hex_str")]
+    #[serde(default, with = "crate::serde_utils::u64::hex_or_dec_or_int")]
     pub nonce: u64,
 }
 

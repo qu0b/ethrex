@@ -199,6 +199,50 @@ pub mod u64 {
             serializer.serialize_str(&format!("{value:#x}"))
         }
     }
+    pub mod hex_or_dec_or_int {
+        use super::*;
+        use serde::de::{Unexpected, Visitor};
+        use std::fmt;
+
+        struct U64Visitor;
+
+        impl<'de> Visitor<'de> for U64Visitor {
+            type Value = u64;
+
+            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                f.write_str("a hex string, decimal string, or integer")
+            }
+
+            fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<u64, E> {
+                Ok(v)
+            }
+
+            fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<u64, E> {
+                u64::try_from(v).map_err(|_| E::invalid_value(Unexpected::Signed(v), &self))
+            }
+
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<u64, E> {
+                u64::from_str_radix(v.trim_start_matches("0x"), 16)
+                    .or_else(|_| v.parse::<u64>())
+                    .map_err(|_| E::invalid_value(Unexpected::Str(v), &self))
+            }
+        }
+
+        pub fn deserialize<'de, D>(d: D) -> Result<u64, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            d.deserialize_any(U64Visitor)
+        }
+
+        pub fn serialize<S>(value: &u64, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            serializer.serialize_str(&format!("{value:#x}"))
+        }
+    }
+
     pub mod hex_str_padding {
         use super::*;
 
