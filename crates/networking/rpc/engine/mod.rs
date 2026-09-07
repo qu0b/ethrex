@@ -15,7 +15,7 @@ pub type ExchangeCapabilitiesRequest = Vec<String>;
 
 /// List of capabilities that the execution layer client supports. Add new capabilities here.
 /// More info: https://github.com/ethereum/execution-apis/blob/main/src/engine/common.md#engine_exchangecapabilities
-pub const CAPABILITIES: [&str; 25] = [
+pub const CAPABILITIES: [&str; 26] = [
     "engine_forkchoiceUpdatedV1",
     "engine_forkchoiceUpdatedV2",
     "engine_forkchoiceUpdatedV3",
@@ -40,6 +40,7 @@ pub const CAPABILITIES: [&str; 25] = [
     "engine_getBlobsV1",
     "engine_getBlobsV2",
     "engine_getBlobsV3",
+    "engine_getBlobsV4",
     "engine_getClientVersionV1",
 ];
 
@@ -78,5 +79,23 @@ mod tests {
     #[test]
     fn capabilities_include_new_payload_with_witness_v5() {
         assert!(CAPABILITIES.contains(&"engine_newPayloadWithWitnessV5"));
+    }
+
+    /// A routed method that is not advertised is unreachable in practice: consensus clients pick
+    /// the blob-retrieval version from `engine_exchangeCapabilities`, so an omission here silently
+    /// disables the EIP-8070 path even though the handler exists and answers correctly.
+    #[test]
+    fn capabilities_advertise_every_routed_get_blobs_version() {
+        for method in [
+            "engine_getBlobsV1",
+            "engine_getBlobsV2",
+            "engine_getBlobsV3",
+            "engine_getBlobsV4",
+        ] {
+            assert!(
+                CAPABILITIES.contains(&method),
+                "{method} is routed in rpc.rs but missing from CAPABILITIES"
+            );
+        }
     }
 }
